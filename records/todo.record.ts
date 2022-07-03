@@ -1,9 +1,14 @@
 import {TodoEntity} from "../types";
 import {ValidationError} from "../utils/errors";
+import {pool} from "../utils/db";
+import {FieldPacket} from "mysql2";
+import {v4 as uuid} from "uuid";
 
 interface NewTodoEntity extends Omit<TodoEntity, 'id'>{
     id?: string;
 }
+
+type TodoRecordResults = [[TodoEntity], [FieldPacket]];
 
 export class TodoRecord implements TodoEntity{
     id: string;
@@ -31,11 +36,61 @@ export class TodoRecord implements TodoEntity{
             throw new ValidationError('Właściciel zadania nie może być pusty.')
         }
 
+        this.id = obj.id;
         this.title = obj.title;
         this.description = obj.description;
-        this.isClosed = false;
+        this.isClosed = obj.isClosed;
         this.ownerId = obj.ownerId;
     }
 
+    static async getOne(id: string) : Promise<TodoEntity | null> {
+
+        const [results] = await pool.execute("SELECT * FROM `tasks` WHERE id = :id", {
+            id,
+        }) as TodoRecordResults;
+
+        return  results.length > 0 ? new TodoRecord(results[0]) : null;
+    }
+
+    static async findAll(title: string) : Promise<TodoEntity[]> {
+
+        const [results] = await pool.execute("SELECT * FROM `tasks` WHERE `title` LIKE :search", {
+            search: `%${title}%`,
+        }) as TodoRecordResults;
+
+        return results.map(result => {
+            const {id, title, description, isClosed, ownerId} = result;
+            return {
+                id, title, description,isClosed,ownerId
+            };
+        });
+    }
+
+    async insert(): Promise<string>{
+        if(!this.id){
+            this.id = uuid();
+        }else
+        {
+            throw new ValidationError('Cannot insert something that is already inserted');
+        }
+        await pool.execute("INSERT INTO `tasks` (`id`,`title`,`description`, `isClosed`, `ownerId`) VALUES (:id, :title, :description, :isClosed, :ownerId)", this);
+
+        return this.id;
+    }
+
+    async delete(): Promise<void>{
+        await pool.execute("DELETE FROM `tasks` WHERE id = :id",{
+            id: this.id,
+        })
+    }
+
+    async update(): Promise<void> {
+        await pool.execute("UPDATE `tasks` SET `title` = :title, `description` = :description, `isClosed` = :isClosed WHERE `id` = :id",{
+            id: this.id,
+            title: this.title,
+            description: this.description,
+            isClosed: this.isClosed
+        })
+    }
 
 }
