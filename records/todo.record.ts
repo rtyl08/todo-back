@@ -20,6 +20,8 @@ export class TodoRecord implements TodoEntity{
 
     constructor(obj: NewTodoEntity) {
 
+        console.log(obj);
+
         if(!obj.title){
             throw new ValidationError('Tytył zadania nie może być pusty.')
         }

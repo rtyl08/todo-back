@@ -37,15 +37,22 @@ export class OwnerRecord implements OwnerEntity{
         return this.id;
     }
 
-    static async getOne(id: string) : Promise<OwnerEntity | null> {
+    static async getOne(name: string) : Promise<OwnerEntity | null> {
 
-        let [results] = await pool.execute("SELECT * FROM `owners` WHERE id = :id",{
-            id: id,
+        let [results] = await pool.execute("SELECT * FROM `owners` WHERE name = :name",{
+            name,
         }) as OwnerRecordResult;
 
         return results.length > 0 ? new OwnerRecord(results[0]) : null;
     }
+    static async getOneById(id: string) : Promise<OwnerEntity | null> {
 
+        let [results] = await pool.execute("SELECT * FROM `owners` WHERE id = :id",{
+            id,
+        }) as OwnerRecordResult;
+
+        return results.length > 0 ? new OwnerRecord(results[0]) : null;
+    }
     async delete(): Promise<void> {
         pool.execute("DELETE FROM `owners` WHERE id = :id", {
             id: this.id,
