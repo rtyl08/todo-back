@@ -6,6 +6,8 @@ export const todoRouter = Router();
 
 todoRouter
     .all('*', (req, res, next) =>{
+        console.log(req.session.ownerid);
+
         if(!req.session.ownerid) {
             res.statusCode = 403;
             res.json({"message":"Sessia wygasła. Proszę zalogować się"});
