@@ -19,7 +19,9 @@ app.use(limiter);
 app.use(cors({
     origin: 'http://localhost:3000',
 }));
+
 app.use(cookieParser());
+
 app.use(cookieSession({
     name: 'session',
     keys: ['config.keySession'],

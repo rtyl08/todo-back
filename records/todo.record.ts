@@ -54,10 +54,25 @@ export class TodoRecord implements TodoEntity{
         return  results.length > 0 ? new TodoRecord(results[0]) : null;
     }
 
-    static async findAll(title: string) : Promise<TodoEntity[]> {
+    static async findAll(ownerId: string) : Promise<TodoEntity[]> {
 
-        const [results] = await pool.execute("SELECT * FROM `tasks` WHERE `title` LIKE :search", {
+        const [results] = await pool.execute("SELECT * FROM `tasks` WHERE ownerId = :ownerId ", {
+            ownerId,
+        }) as TodoRecordResults;
+
+        return results.map(result => {
+            const {id, title, description, isClosed, ownerId} = result;
+            return {
+                id, title, description,isClosed,ownerId
+            };
+        });
+    }
+
+    static async searchAll(title: string, ownerId: string) : Promise<TodoEntity[]> {
+
+        const [results] = await pool.execute("SELECT * FROM `tasks` WHERE ownerId = :ownerId AND `title` LIKE :search", {
             search: `%${title}%`,
+            ownerId,
         }) as TodoRecordResults;
 
         return results.map(result => {
@@ -82,6 +97,12 @@ export class TodoRecord implements TodoEntity{
 
     async delete(): Promise<void>{
         await pool.execute("DELETE FROM `tasks` WHERE id = :id",{
+            id: this.id,
+        })
+    }
+
+    async close(): Promise<void>{
+        await pool.execute("UPDATE `tasks` SET `isClose` = 1 WHERE id = :id",{
             id: this.id,
         })
     }
