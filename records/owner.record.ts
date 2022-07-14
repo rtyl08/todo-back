@@ -12,6 +12,7 @@ type OwnerRecordResult = [[OwnerEntity], [FieldPacket]];
 export class OwnerRecord implements OwnerEntity{
     id: string;
     name: string;
+    fullName: string;
     password: string;
 
     constructor(obj: NewOwnerEntity) {
@@ -19,8 +20,12 @@ export class OwnerRecord implements OwnerEntity{
         if (obj.name.length < 5 || obj.name.length > 50)
             throw new ValidationError('Długość nazwy użyktoniwka minimum 5 znaków i maksymalnie 50 znaków ')
 
+        if (obj.name.length < 5 || obj.name.length > 75)
+            throw new ValidationError('Długość fullName minimum 5 znaków i maksymalnie 75 znaków ')
+
         this.id = obj.id;
         this.name = obj.name;
+        this.fullName = obj.fullName;
         this.password = obj.password;
     }
 
@@ -32,7 +37,7 @@ export class OwnerRecord implements OwnerEntity{
             throw new ValidationError('Cannot insert something that is already inserted');
         }
 
-        pool.execute("INSERT INTO `owners` (`id`, `name`, `password`) VALUE (:id, :name, :password)", this);
+        pool.execute("INSERT INTO `owners` (`id`, `name`, `fullName`, `password`) VALUE (:id, :name, :fullName, :password)", this);
 
         return this.id;
     }
@@ -53,9 +58,9 @@ export class OwnerRecord implements OwnerEntity{
 
         return results.length > 0 ? new OwnerRecord(results[0]) : null;
     }
-    async delete(): Promise<void> {
+    static async delete(id: string): Promise<void> {
         pool.execute("DELETE FROM `owners` WHERE id = :id", {
-            id: this.id,
+            id,
         });
     }
 }
