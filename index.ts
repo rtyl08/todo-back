@@ -30,7 +30,7 @@ app.use(cookieSession({
 app.use(express.json());
 
 app.use('/tasks', todoRouter);
-app.use('/owner', ownerRouter);
+app.use('/owners', ownerRouter);
 
 app.use(handleError);
 

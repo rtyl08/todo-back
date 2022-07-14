@@ -1,7 +1,7 @@
-import {TodoEntity} from "../types";
+import {TodoEntity, TodoEntityDto} from "../types";
 import {ValidationError} from "../utils/errors";
 import {pool} from "../utils/db";
-import {FieldPacket} from "mysql2";
+import {FieldPacket, RowDataPacket} from "mysql2";
 import {v4 as uuid} from "uuid";
 
 interface NewTodoEntity extends Omit<TodoEntity, 'id'>{
@@ -20,8 +20,6 @@ export class TodoRecord implements TodoEntity{
 
     constructor(obj: NewTodoEntity) {
 
-        console.log(obj);
-
         if(!obj.title){
             throw new ValidationError('Tytył zadania nie może być pusty.')
         }
@@ -38,6 +36,7 @@ export class TodoRecord implements TodoEntity{
             throw new ValidationError('Właściciel zadania nie może być pusty.')
         }
 
+
         this.id = obj.id;
         this.title = obj.title;
         this.description = obj.description;
@@ -53,32 +52,48 @@ export class TodoRecord implements TodoEntity{
 
         return  results.length > 0 ? new TodoRecord(results[0]) : null;
     }
+    static async countAll(ownerId: string, searchText: string, isClosed?:boolean): Promise<number> {
 
-    static async findAll(ownerId: string) : Promise<TodoEntity[]> {
+        let sqlQuery = "SELECT count(*) as countRows FROM `tasks`  WHERE `title` LIKE :search AND ownerId = :ownerId ";
 
-        const [results] = await pool.execute("SELECT * FROM `tasks` WHERE ownerId = :ownerId ", {
+        if (isClosed !== null && isClosed === true){
+            sqlQuery = "SELECT count(*) as countRows FROM `tasks`  WHERE `title` LIKE :search AND ownerId = :ownerId AND isClosed = 1 ";
+        }
+
+        if (isClosed !== null && isClosed === false){
+            sqlQuery = "SELECT count(*) as countRows FROM `tasks`  WHERE `title` LIKE :search AND ownerId = :ownerId AND isClosed = 0 ";
+        }
+
+        const [pagesCount] = await pool.execute(sqlQuery, {
             ownerId,
-        }) as TodoRecordResults;
+            search: `%${searchText}%`,
+        }) ;
 
-        return results.map(result => {
-            const {id, title, description, isClosed, ownerId} = result;
-            return {
-                id, title, description,isClosed,ownerId
-            };
-        });
+        return (pagesCount as RowDataPacket)[0].countRows;
     }
+    static async findAll(ownerId: string, pageNumber: number, pageSize: number, searchText: string, isClosed?:boolean) : Promise<TodoEntityDto[]> {
 
-    static async searchAll(title: string, ownerId: string) : Promise<TodoEntity[]> {
+        let sqlQuery = "SELECT * FROM `tasks`  WHERE `title` LIKE :search AND ownerId = :ownerId LIMIT :skip,:rows";
 
-        const [results] = await pool.execute("SELECT * FROM `tasks` WHERE ownerId = :ownerId AND `title` LIKE :search", {
-            search: `%${title}%`,
+        if (isClosed !== null && isClosed === true){
+            sqlQuery = "SELECT * FROM `tasks`  WHERE `title` LIKE :search AND ownerId = :ownerId AND isClosed = 1 LIMIT :skip,:rows";
+        }
+
+        if (isClosed !== null && isClosed === false){
+            sqlQuery = "SELECT * FROM `tasks`  WHERE `title` LIKE :search AND ownerId = :ownerId AND isClosed = 0 LIMIT :skip,:rows";
+        }
+
+        const [results] = await pool.execute(sqlQuery, {
+            search: `%${searchText}%`,
             ownerId,
+            rows: pageSize,
+            skip: (pageNumber - 1) * pageSize,
         }) as TodoRecordResults;
 
         return results.map(result => {
             const {id, title, description, isClosed, ownerId} = result;
             return {
-                id, title, description,isClosed,ownerId
+                id, title, description,isClosed
             };
         });
     }
@@ -95,14 +110,14 @@ export class TodoRecord implements TodoEntity{
         return this.id;
     }
 
-    async delete(): Promise<void>{
+    static async delete(id: string): Promise<void>{
         await pool.execute("DELETE FROM `tasks` WHERE id = :id",{
-            id: this.id,
+            id,
         })
     }
 
     async close(): Promise<void>{
-        await pool.execute("UPDATE `tasks` SET `isClose` = 1 WHERE id = :id",{
+        await pool.execute("UPDATE `tasks` SET `isClosed` = 1 WHERE id = :id",{
             id: this.id,
         })
     }

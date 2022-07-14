@@ -40,8 +40,11 @@ ownerRouter
         const {name, password1, password2} = req.body;
 
         const owner = await OwnerRecord.getOne(name);
-        if(!owner)
-            res.status(409).json({"message":`Bład rejestarcji. Użytkownik o nazwie ${name} już istnieje.`});
+
+        if(owner) {
+            res.status(409).json({"message": `Bład rejestarcji. Użytkownik o nazwie ${name} już istnieje.`});
+            return;
+        }
 
         if (password1 === password2){
 
