@@ -67,9 +67,14 @@ ownerRouter
     })
 
     .get('/logout', async (req, res) => {
-
+        console.log(req.session.ownerid);
+        if (req.session.ownerid !== undefined){
             req.session = null;
-            res.json({"message": "Pomyślnie wylogowanie"});
+            res.status(200).json({"message": "Pomyślnie wylogowanie"});
+        }else{
+            res.status(404).json({"message": "Brak aktywnej sesji do wylogowania"});
+        }
+
     })
 
     .post('/register', async (req, res) => {

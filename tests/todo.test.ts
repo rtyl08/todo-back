@@ -1,4 +1,6 @@
 import {TodoRecord} from "../records/todo.record";
+import {OwnerRecord} from "../records/owner.record";
+import {pool} from "../utils/db";
 
 
 const defaultObj = {
@@ -7,14 +9,35 @@ const defaultObj = {
     isClosed: false,
     ownerId: "tstststtst",
 }
+
+afterAll( () => {
+    pool.end();
+})
+
 test('TodoRecord returns data form database for one record by id', async () =>{
 
-    const todo = await TodoRecord.getOne('73d3f348-fa34-11ec-96ef-001c42c60b59');
+    const ownerRecord = new OwnerRecord({
+        name: Date.now().toString(),
+        fullName: "Testowy użytkownk",
+        password: "12345",
+    });
+    await ownerRecord.insert();
+    console.log(ownerRecord.id);
+    const todoRecord = new TodoRecord({
+        title: "Testowy temat",
+        description: "testowy opis",
+        ownerId: ownerRecord.id,
+        isClosed: false,
+    });
+    await  todoRecord.insert();
 
-    console.log(todo);
+    const todo = await TodoRecord.getOne(todoRecord.id);
+
 
     expect(todo).toBeDefined();
-    expect(todo.id).toBe('73d3f348-fa34-11ec-96ef-001c42c60b59');
+    expect(todo.id).toBe(todoRecord.id);
+
+    await OwnerRecord.delete(ownerRecord.id);
 })
 
 test('TodoRecord returns null from database for unknown id', async () =>{
@@ -25,7 +48,14 @@ test('TodoRecord returns null from database for unknown id', async () =>{
 })
 
 test('TodoRecord can insert record to database', async () =>{
-    const record = new TodoRecord(defaultObj);
+    const ownerRecord = new OwnerRecord({
+        name: Date.now().toString(),
+        fullName: "Testowy użytkownk",
+        password: "12345",
+    });
+    await ownerRecord.insert();
+
+    const record = new TodoRecord({...defaultObj, ownerId: ownerRecord.id});
 
     const id = await record.insert();
 
@@ -33,24 +63,43 @@ test('TodoRecord can insert record to database', async () =>{
 
     expect(recordFromDB).toBeDefined();
     expect(recordFromDB.id).toBe(id);
+
+    await OwnerRecord.delete(ownerRecord.id);
 })
 
 test('TodoRecord can delete record form database', async () =>{
-    const record = new TodoRecord(defaultObj);
+    const ownerRecord = new OwnerRecord({
+        name: Date.now().toString(),
+        fullName: "Testowy użytkownk",
+        password: "12345",
+    });
+    await ownerRecord.insert();
+
+    const record = new TodoRecord({...defaultObj, ownerId: ownerRecord.id});
 
     const id = await record.insert();
 
     let recordFromDB = await TodoRecord.getOne(id);
     expect(recordFromDB).toBeDefined();
 
-    await record.delete();
+    await TodoRecord.delete(id);
 
     recordFromDB = await TodoRecord.getOne(id);
     expect(recordFromDB).toBeNull();
+
+    await OwnerRecord.delete(ownerRecord.id);
 })
 
 test('TodoRecord can update title, description, isClosed in database', async () =>{
-    const record = new TodoRecord(defaultObj);
+
+    const ownerRecord = new OwnerRecord({
+        name: Date.now().toString(),
+        fullName: "Testowy użytkownk",
+        password: "12345",
+    });
+    await ownerRecord.insert();
+
+    const record = new TodoRecord({...defaultObj, ownerId: ownerRecord.id});
     await record.insert();
 
     record.title = 'nowy tytuł';
@@ -64,4 +113,6 @@ test('TodoRecord can update title, description, isClosed in database', async () 
     expect(recordFormDb.title).toBe('nowy tytuł');
     expect(recordFormDb.description).toBe('nowy opis zadania');
     expect(recordFormDb.isClosed).toBe(1);
+
+    await OwnerRecord.delete(ownerRecord.id);
 })

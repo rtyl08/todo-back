@@ -1,8 +1,13 @@
 import {OwnerRecord} from "../records/owner.record";
+import {pool} from "../utils/db";
 
+afterAll( () => {
+    pool.end();
+})
 test('OwnerRecord can insert data to database', async () =>{
     const record = new OwnerRecord({
-        name:'user name 1',
+        name:Date.now().toString(),
+        fullName: 'Adam Nowak',
         password: 'password',
     })
 
@@ -11,7 +16,7 @@ test('OwnerRecord can insert data to database', async () =>{
 
     expect(recordFormDb1).toBeDefined();
 
-    await record.delete();
+    await OwnerRecord.delete(record.id);
 
     let recordFormDb2 = await OwnerRecord.getOne(record.id);
     expect(recordFormDb2).toBeNull();

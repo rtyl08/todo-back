@@ -1,4 +1,5 @@
 import {TodoRecord} from "../records/todo.record";
+import {pool} from "../utils/db";
 
 const defaultObj = {
     title: 'moje zadanie',
@@ -6,6 +7,10 @@ const defaultObj = {
     isClosed: false,
     ownerId: 'ererer'
 }
+
+afterAll( () => {
+    pool.end();
+})
 
 test('Validate invalid empty title', () => {
 

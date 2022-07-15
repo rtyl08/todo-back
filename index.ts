@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import {todoRouter} from "./routers/todo";
 import {ownerRouter} from "./routers/owner";
 import { config } from "./config";
+import {homeRouter} from "./routers/home";
 
 const app = express();
 const limiter = rateLimit({
@@ -21,6 +22,7 @@ app.use(cors({
     origin: 'http://localhost:3000',
 }));
 
+app.use(express.static('public'))
 app.use(cookieParser());
 
 app.use(cookieSession({
@@ -30,8 +32,9 @@ app.use(cookieSession({
 }));
 app.use(express.json());
 
-app.use('/tasks', todoRouter);
-app.use('/owners', ownerRouter);
+app.use('/', homeRouter );
+app.use('/api/v1/tasks', todoRouter);
+app.use('/api/v1/owners', ownerRouter);
 
 app.use(handleError);
 
