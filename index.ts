@@ -7,6 +7,7 @@ import {handleError} from "./utils/errors";
 import rateLimit from "express-rate-limit";
 import {todoRouter} from "./routers/todo";
 import {ownerRouter} from "./routers/owner";
+import { config } from "./config";
 
 const app = express();
 const limiter = rateLimit({
@@ -23,9 +24,9 @@ app.use(cors({
 app.use(cookieParser());
 
 app.use(cookieSession({
-    name: 'session',
-    keys: ['config.keySession'],
-    secret:'config.secret',
+    name: config.sessionName,
+    keys: config.keySession,
+    secret: config.secret,
 }));
 app.use(express.json());
 
